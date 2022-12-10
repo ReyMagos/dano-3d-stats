@@ -1,10 +1,8 @@
 import re
-from collections import deque
 
 
 def optimize(
         src_path, dest_path,
-        remove_whitespaces=True,  # Remove all whitespace characters
         precision=5,              # Point coordinates precision
         merge_rounds=1,           # Number of merging rounds
         merge_max_distance=5      # Max distance within points can be merged
@@ -14,72 +12,93 @@ def optimize(
         MAP = 2
         ARRAY = 3
 
-        KEY = 4
-        VALUE = 5
-
-    stack = deque()
-    waiting_for = Json.VALUE
-    namespace = deque()
+    entities = []
+    keys = []
     value_buffer = None
 
     with open(src_path) as src, open(dest_path, mode="a") as dest:
 
         def copying_reader():
-            nonlocal value_buffer, waiting_for
+            nonlocal value_buffer
+            write_buffer = ""
 
             while char := src.read(1):
-                if value_buffer is not None:
+                if char == '"':
+                    if entities[-1] == Json.STRING:
+                        if len(keys) < len(entities):
+                            # String without key is key itself
+                            keys.append(value_buffer)
+                            value_buffer = None
+                        entities.pop()
+                    else:
+                        entities.append(Json.STRING)
+                        value_buffer = ""
+                elif value_buffer is not None:
                     value_buffer += char
                 elif char == '[':
-                    stack.append(Json.ARRAY)
-                    namespace.append("0")
+                    entities.append(Json.ARRAY)
+                    keys.append("0")
                 elif char == '{':
-                    stack.append(Json.MAP)
-                    waiting_for = Json.KEY
+                    entities.append(Json.MAP)
                 elif char in "]}":
-                    stack.pop()
-                elif char == '"':
-                    if stack[-1] == Json.STRING:
-                        stack.pop()
-                        if waiting_for == Json.KEY:
-                            namespace.append(value_buffer)
-                            value_buffer = None
-                    else:
-                        if waiting_for == Json.KEY:
-                            value_buffer = ""
-                        stack.append(Json.STRING)
+                    entities.pop()
+                    keys.pop()
                 elif char == ':':
-                    waiting_for = Json.VALUE
 
                     # Parse coordinates to do optimizations
-                    if re.match(r"features.*.geometry.coordinates", ".".join(namespace)):
-                        dest.write(':')
-                        return parsing_reader
+                    if re.match(r"features.*.geometry.coordinates", ".".join(keys)):
+                        write_buffer += ':'
+                        dest.write(write_buffer)
+
+                        return geometry_reader
 
                 elif char == ',':
-                    if stack[-1] == Json.ARRAY:
-                        namespace[-1] = str(int(namespace[-1]) + 1)
-                    elif stack[-1] == Json.MAP:
-                        waiting_for = Json.KEY
+                    if entities[-1] == Json.ARRAY:
+                        keys[-1] = str(int(keys[-1]) + 1)
+                    elif entities[-1] == Json.MAP:
+                        keys.pop()
 
-                if not char.isspace() or not remove_whitespaces:
-                    dest.write(char)
+                if not char.isspace():
+                    write_buffer += char
 
-            return None
+            dest.write(write_buffer)
 
-        def parsing_reader():
+        def geometry_reader():
+            nonlocal value_buffer
+
+            geometry = []
+
             while char := src.read(1):
-                ...
+                if char.isdigit() or char == '.':
+                    value_buffer += char
+                if char == '[':
+                    entities.append(Json.ARRAY)
+                    keys.append("0")
+                elif char == ']':
+                    if value_buffer is not None:
+                        ...
+                        value_buffer = None
+
+                    entities.pop()
+                    if keys.pop() == "coordinates":
+                        # End of geometry
+                        for _ in range(merge_rounds):
+                            merge_points(geometry)
+
+                        ...
+
+                        return copying_reader
+
+                elif char == ',':
+                    if value_buffer is not None:
+                        ...
+                        value_buffer = None
+                    keys[-1] = str(int(keys[-1]) + 1)
 
         def merge_points(geometry):
-            ...
-
-        def adjust_precision(geometry):
             for ring in geometry:
-                for point in ring:
-                    point[0] = ...
-                    point[1] = ...
-
+                for i, point in enumerate(ring):
+                    ...
 
         reader = copying_reader
         while (next_reader := reader()) is not None:
