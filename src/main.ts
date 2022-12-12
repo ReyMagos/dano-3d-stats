@@ -121,7 +121,7 @@ const renderer = new WebGLRenderer()
 renderer.setSize(window.innerWidth, window.innerHeight)
 document.body.append(renderer.domElement)
 
-init("russia-regions.geojson")
+init("optimized.geojson")
 
 function render() {
     requestAnimationFrame(render)
