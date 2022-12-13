@@ -8,8 +8,8 @@ from math import dist
 def optimize(
         src_path, dest_path,
         precision=5,              # Point coordinates precision
-        merge_rounds=2,           # Number of merging rounds
-        merge_max_distance=5      # Max distance within points can be merged
+        merge_rounds=6,           # Number of merging rounds
+        merge_max_distance=0.1      # Max distance within points can be merged
 ):
     class Json:
         NUMBER = 0
@@ -97,6 +97,7 @@ def optimize(
 
         ring_start = None
         ring_end = None
+        ring_length = 0
         point_buffer = []
 
         while char := src.read(1):
@@ -120,12 +121,14 @@ def optimize(
                     else:
                         ring_end.next = node
                         ring_end = node
+                    ring_length += 1
 
                     point_buffer.clear()
                     value_buffer = ""
                 elif ended == GeoJson.RING:
                     for _ in range(merge_rounds):
-                        merge_points(ring_start, ring_end)
+                        if ring_length >= 8:
+                            ring_length -= merge_points(ring_start, ring_end)
 
                     point = ring_start
                     points = []
@@ -140,7 +143,6 @@ def optimize(
                     dest.write(write_buffer)
                     write_buffer = ""
 
-                    update_progress_bar(src.tell())
                     return copying_reader
 
             elif char == ',':
@@ -152,17 +154,27 @@ def optimize(
 
     def merge_points(ring_start, ring_end):
         point = ring_start
+        merged = 0
         while point is not None:
             if point.next is not None and dist(point.data, point.next.data) < merge_max_distance:
                 x = (point.data[0] + point.next.data[0]) / 2
                 y = (point.data[1] + point.next.data[1]) / 2
                 point.data[:] = x, y
                 point.next = point.next.next
+                merged += 1
             point = point.next
 
         # The first and the last positions must contain identical values
         if ring_start.data != ring_end.data:
             ring_end.data = ring_start.data
+
+        return merged
+
+    print(f"Optimizing started (precision = {precision}; merge_rounds = {merge_rounds}; "
+          f"merge_max_distance = {merge_max_distance})")
+
+    if os.path.exists(dest_path):
+        os.remove(dest_path)
 
     with open(src_path) as src, open(dest_path, mode="a") as dest:
         file_length = os.stat(src_path).st_size
@@ -171,8 +183,12 @@ def optimize(
             length = 50
             percent = "{0:.1f}".format(100 * (iteration / float(file_length)))
             filled_length = int(length * iteration // file_length)
-            bar = "▒" * filled_length + '-' * (length - filled_length)
-            print(f'\rProgress: {bar} {percent}% optimized', end="")
+
+            green = "\u001b[38;5;154m"
+            red = "\u001b[90m"
+            reset = "\u001b[0m"
+            bar = green + "━" * filled_length + red + '━' * (length - filled_length) + reset
+            print(f'\rProgress: {bar} {percent}% completed', end="")
 
             # Print newline on complete
             if iteration >= file_length:
@@ -180,7 +196,11 @@ def optimize(
 
         reader = copying_reader
         while (next_reader := reader()) is not None:
+            update_progress_bar(src.tell())
             reader = next_reader
 
+        update_progress_bar(src.tell())
+        print("Done.")
 
-optimize("russia_regions.geojson", "../public/optimized.geojson")
+
+optimize("russia_regions.geojson", "optimized.geo.json")
