@@ -43,7 +43,7 @@ function createRegionMesh(...polygons: any) {
 
     const rand = Math.random()
 
-    const material = new MeshLambertMaterial({color: 0x200200 + rand * 255})
+    const material = new MeshLambertMaterial({color: 0xFF0000 + Math.floor(rand * 256) * 256})
     const geometry = new ExtrudeGeometry(regionShape, {
         bevelEnabled: false,
         steps: 1,
