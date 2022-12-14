@@ -1,132 +1,121 @@
 import "./style.css"
-
-import * as d3 from "d3"
-import {SVGLoader} from "three/examples/jsm/loaders/SVGLoader";
 import {
-    BufferGeometry, DoubleSide,
-    Float32BufferAttribute, Mesh,
-    MeshPhongMaterial, PerspectiveCamera, Scene,
-    Shape, ShapeUtils, WebGLRenderer
-} from "three";
+    AxesHelper,
+    ExtrudeGeometry, Mesh, MeshLambertMaterial, Path, PerspectiveCamera,
+    PointLight, Scene, Shape, WebGLRenderer
+} from "three"
+import Stats from "stats.js";
+import {OrbitControls} from "three/examples/jsm/controls/OrbitControls";
+
+// output from optimize.py
+import geoJson from "./optimized.geo.json"
 
 
-class RegionObject extends Mesh {
-    currentHeight: number
+let scene: Scene,
+    camera: PerspectiveCamera,
+    renderer: WebGLRenderer,
+    stats: Stats
 
-    constructor(shapes: Shape[], initialHeight = 10) {
-        super(
-            new BufferGeometry(),
-            new MeshPhongMaterial( {
-                side: DoubleSide,
-                vertexColors: true
-            })
-        )
+function createRegionMesh(...polygons: any) {
+    const regionShape: Shape[] = []
 
-        this.currentHeight = initialHeight
+    for (const polygon of polygons) {
+        const shape = new Shape()
 
-        const indices: number[] = []
-        const vertices: number[] = []
-        const normals: number[] = []
-        const colors: number[] = []
+        // Exterior path
+        shape.moveTo(polygon[0][0][0], polygon[0][0][1])
+        for (const point of polygon[0])
+            shape.lineTo(point[0], point[1])
 
-        for (let i = 0; i < shapes.length; ++i)
-            addShape(shapes[i])
+        // Interior paths
+        for (let i = 1; i < polygon.length; ++i) {
+            const holePath = new Path()
 
-        this.geometry.setIndex(indices)
-        this.geometry.setAttribute("position", new Float32BufferAttribute(vertices, 3))
-        this.geometry.setAttribute("normal", new Float32BufferAttribute(normals, 3))
-        this.geometry.setAttribute("color", new Float32BufferAttribute(colors, 3))
+            holePath.moveTo(polygon[i][0][0], polygon[i][0][1])
+            for (const point of polygon[i])
+                holePath.lineTo(point[0], point[1])
 
-        function addShape(shape: Shape) {
-            const indexOffset = vertices.length / 3
-            const points = shape.extractPoints(12)
-
-            // We don't have holes in region shapes
-            let shapeVertices = points.shape
-
-            // Bottom shape
-            shapeVertices.forEach(vertex => addVertex(vertex.x, vertex.y, 0))
-            // Top shape
-            shapeVertices.forEach(vertex => addVertex(vertex.x, vertex.y, initialHeight))
-
-            const lidFaces = ShapeUtils.triangulateShape(points.shape, points.holes)
-            for (let i = 0; i < lidFaces.length; ++i) {
-                const bottom = lidFaces[i].map(vertex => vertex + indexOffset)
-                const top = lidFaces[i].map(vertex => vertex + indexOffset + shapeVertices.length)
-                indices.push(...bottom, ...top)
-            }
-
-            const sideFaces = createSideTriangles(shapeVertices.length)
-            for (let i = 0; i < sideFaces.length; ++i) {
-                const side = sideFaces[i].map(vertex => vertex + indexOffset)
-                indices.push(...side)
-            }
+            shape.holes.push(holePath)
         }
 
-        function createSideTriangles(shapeLength: number) {
-            const triangles: number[][] = []
-            for (let i = 0; i < shapeLength; ++i)
-                triangles.push([i, i + 1, i + shapeLength])
-
-            return triangles
-        }
-
-        function addVertex(x: number, y: number, z: number) {
-            vertices.push(x, y, z)
-            normals.push(0, 0, 1)
-            colors.push(1, 0, 0)
-        }
+        regionShape.push(shape)
     }
 
-    updateHeight(newHeight: number) {
-        const vertices = this.geometry.attributes.position.array
+    const rand = Math.random()
 
-        for (let i = vertices.length / 2; i < vertices.length; ++i) {
-            // @ts-ignore
-            vertices[i] += newHeight - this.currentHeight
-        }
+    const material = new MeshLambertMaterial({color: 0xFF0000 + Math.floor(rand * 256) * 256})
+    const geometry = new ExtrudeGeometry(regionShape, {
+        bevelEnabled: false,
+        steps: 1,
+        depth: 2 + rand * 3
+    })
 
-        this.geometry.attributes.position.needsUpdate = true;
-    }
-
-    updateColor(newColor: any) {
-
-    }
+    return new Mesh(geometry, material)
 }
 
-function init(mapPath: string) {
-    const generatePath = d3.geoPath().projection(d3.geoMercator())
-    const svgLoader = new SVGLoader()
+function initRegions() {
+    // @ts-ignore
+    geoJson.features.forEach(regionFeature => {
+        const regionName = regionFeature.properties.region
 
-    d3.json(mapPath).then((json: any) => {
-        (json as d3.ExtendedFeatureCollection).features.forEach(regionFeature => {
-            const regionName = regionFeature.properties!.region
-            const svgPath = generatePath(regionFeature)
-
-            if (svgPath === null)
-                throw `Region (${regionName}) path hasn't been generated`
-
-            scene.add(new RegionObject(
-                SVGLoader.createShapes(svgLoader.parse(`<path d="${svgPath}" />`).paths[0])
-            ))
-        })
+        if (regionFeature.geometry.type === "MultiPolygon")
+            scene.add(createRegionMesh(...regionFeature.geometry.coordinates))
+        else
+            scene.add(scene.add(createRegionMesh(regionFeature.geometry.coordinates)))
     })
 }
 
+function initScene() {
+    camera = new PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 2000);
+    camera.position.set(50, 50, 50)
 
-const scene = new Scene()
-const camera = new PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000)
+    scene = new Scene();
+    scene.scale.set(0.6, 1, 1)
+    scene.add(new AxesHelper(30))
 
-const renderer = new WebGLRenderer()
-renderer.setSize(window.innerWidth, window.innerHeight)
-document.body.append(renderer.domElement)
+    let pointLight = new PointLight(0xFFFFFF);
+	pointLight.position.set(-800, 800, 800);
+	scene.add(pointLight);
 
-init("optimized.geojson")
+	let pointLight2 = new PointLight(0xFFFFFF);
+	pointLight2.position.set(800, 800, 800);
+	scene.add(pointLight2);
+
+	let pointLight3 = new PointLight(0xFFFFFF);
+	pointLight3.position.set(800, -800, -800);
+	scene.add(pointLight3);
+
+    renderer = new WebGLRenderer({antialias: true});
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.target.set(55, 60, 10)
+
+    stats = new Stats();
+    document.body.appendChild(stats.dom);
+
+    window.addEventListener("resize", onWindowResize);
+}
+
+function onWindowResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+
+    renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+function init() {
+    initScene()
+    initRegions()
+}
 
 function render() {
     requestAnimationFrame(render)
     renderer.render(scene, camera)
+    stats.update()
 }
 
-
+init()
 render()
