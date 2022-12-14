@@ -1,7 +1,7 @@
 import "./style.css"
 import {
     AxesHelper,
-    ExtrudeGeometry, Mesh, MeshLambertMaterial, Path, PerspectiveCamera,
+    ExtrudeGeometry, Mesh, MeshStandardMaterial, Path, PerspectiveCamera,
     PointLight, Scene, Shape, WebGLRenderer
 } from "three"
 import Stats from "stats.js";
@@ -15,6 +15,15 @@ let scene: Scene,
     camera: PerspectiveCamera,
     renderer: WebGLRenderer,
     stats: Stats
+
+function gradient(c1: number, c2: number, x: number) {
+    const r1 = c1 / 65536, g1 = c1 % 65536 / 256, b1 = c1 % 256,
+          r2 = c2 / 65536, g2 = c2 % 65536 / 256, b2 = c2 % 256
+
+    return Math.round(r1 + x * (r2 - r1)) * 65536 +
+           Math.round(g1 + x * (g2 - g1)) * 256 +
+           Math.round(b1 + x * (b2 - b1))
+}
 
 function createRegionMesh(...polygons: any) {
     const regionShape: Shape[] = []
@@ -43,11 +52,11 @@ function createRegionMesh(...polygons: any) {
 
     const rand = Math.random()
 
-    const material = new MeshLambertMaterial({color: 0xFF0000 + Math.floor(rand * 256) * 256})
+    const material = new MeshStandardMaterial({color: gradient(0x202020, 0x6bba3a, rand)})
     const geometry = new ExtrudeGeometry(regionShape, {
         bevelEnabled: false,
         steps: 1,
-        depth: 2 + rand * 3
+        depth: 1 + rand * 5
     })
 
     return new Mesh(geometry, material)
@@ -61,8 +70,30 @@ function initRegions() {
         if (regionFeature.geometry.type === "MultiPolygon")
             scene.add(createRegionMesh(...regionFeature.geometry.coordinates))
         else
-            scene.add(scene.add(createRegionMesh(regionFeature.geometry.coordinates)))
+            scene.add(createRegionMesh(regionFeature.geometry.coordinates))
     })
+}
+
+function setupLights() {
+    const light1 = new PointLight(0xfcdb9f);
+	light1.position.set(0, 50, 20);
+    // light1.add(new AxesHelper(30))
+	scene.add(light1);
+
+    const light2 = new PointLight(0xfcdb9f);
+	light2.position.set(200, 50, 20);
+    // light2.add(new AxesHelper(30))
+	scene.add(light2);
+
+	const light3 = new PointLight(0xfcdb9f);
+	light3.position.set(100, 100, 20);
+    // light3.add(new AxesHelper(30))
+	scene.add(light3);
+
+	const light4 = new PointLight(0xfcdb9f);
+	light4.position.set(100, 0, 20);
+    // light4.add(new AxesHelper(30))
+	scene.add(light4);
 }
 
 function initScene() {
@@ -71,19 +102,8 @@ function initScene() {
 
     scene = new Scene();
     scene.scale.set(0.6, 1, 1)
-    scene.add(new AxesHelper(30))
 
-    let pointLight = new PointLight(0xFFFFFF);
-	pointLight.position.set(-800, 800, 800);
-	scene.add(pointLight);
-
-	let pointLight2 = new PointLight(0xFFFFFF);
-	pointLight2.position.set(800, 800, 800);
-	scene.add(pointLight2);
-
-	let pointLight3 = new PointLight(0xFFFFFF);
-	pointLight3.position.set(800, -800, -800);
-	scene.add(pointLight3);
+    setupLights()
 
     renderer = new WebGLRenderer({antialias: true});
     renderer.setPixelRatio(window.devicePixelRatio);

@@ -9,7 +9,7 @@ def optimize(
         src_path, dest_path,
         precision=5,              # Point coordinates precision
         merge_rounds=6,           # Number of merging rounds
-        merge_max_distance=0.1      # Max distance within points can be merged
+        merge_max_distance=0.1    # Max distance within points can be merged
 ):
     class Json:
         NUMBER = 0
@@ -176,7 +176,7 @@ def optimize(
     if os.path.exists(dest_path):
         os.remove(dest_path)
 
-    with open(src_path) as src, open(dest_path, mode="a") as dest:
+    with open(src_path, encoding="utf-8") as src, open(dest_path, mode="a", encoding="utf-8") as dest:
         file_length = os.stat(src_path).st_size
 
         def update_progress_bar(iteration):
