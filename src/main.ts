@@ -2,7 +2,7 @@ import "./style.css"
 import {
     AxesHelper,
     ExtrudeGeometry, Mesh, MeshStandardMaterial, Path, PerspectiveCamera,
-    PointLight, Scene, Shape, WebGLRenderer
+    PointLight, Raycaster, Scene, Shape, Vector2, WebGLRenderer
 } from "three"
 import Stats from "stats.js";
 import {OrbitControls} from "three/examples/jsm/controls/OrbitControls";
@@ -14,7 +14,9 @@ import geoJson from "./optimized.geo.json"
 let scene: Scene,
     camera: PerspectiveCamera,
     renderer: WebGLRenderer,
-    stats: Stats
+    stats: Stats,
+    raycaster: Raycaster,
+    mouse = new Vector2()
 
 function gradient(c1: number, c2: number, x: number) {
     const r1 = c1 / 65536, g1 = c1 % 65536 / 256, b1 = c1 % 256,
@@ -25,7 +27,7 @@ function gradient(c1: number, c2: number, x: number) {
            Math.round(b1 + x * (b2 - b1))
 }
 
-function createRegionMesh(...polygons: any) {
+function createRegionMesh(dataValue: number, ...polygons: any) {
     const regionShape: Shape[] = []
 
     for (const polygon of polygons) {
@@ -50,13 +52,12 @@ function createRegionMesh(...polygons: any) {
         regionShape.push(shape)
     }
 
-    const rand = Math.random()
-
-    const material = new MeshStandardMaterial({color: gradient(0x202020, 0x6bba3a, rand)})
+    const material = new MeshStandardMaterial({color: gradient(0x202020, 0x6bba3a, dataValue)})
     const geometry = new ExtrudeGeometry(regionShape, {
+        // bevelSegments: 1,
         bevelEnabled: false,
         steps: 1,
-        depth: 1 + rand * 5
+        depth: 1 + dataValue * 5
     })
 
     return new Mesh(geometry, material)
@@ -67,11 +68,32 @@ function initRegions() {
     geoJson.features.forEach(regionFeature => {
         const regionName = regionFeature.properties.region
 
+        const dataValue = Math.random()
+        let mesh;
         if (regionFeature.geometry.type === "MultiPolygon")
-            scene.add(createRegionMesh(...regionFeature.geometry.coordinates))
+            mesh = createRegionMesh(dataValue, ...regionFeature.geometry.coordinates)
         else
-            scene.add(createRegionMesh(regionFeature.geometry.coordinates))
+            mesh = createRegionMesh(dataValue, regionFeature.geometry.coordinates)
+
+        mesh.userData.name = regionName
+        mesh.userData.dataValue = dataValue
+        scene.add(mesh)
     })
+}
+
+function updateInfo() {
+    raycaster.setFromCamera(mouse, camera)
+    const intersection = raycaster.intersectObjects(scene.children)
+
+    let html = "?"
+    for (let i = 0; i < intersection.length; ++i) {
+        const regionName = intersection[i].object.userData.name
+        if (regionName) {
+            html = `<p class="name">${regionName}</p><p class="data">${intersection[i].object.userData.dataValue}</p>`
+            break
+        }
+    }
+    document.getElementById("info")!.innerHTML = html
 }
 
 function setupLights() {
@@ -116,7 +138,15 @@ function initScene() {
     stats = new Stats();
     document.body.appendChild(stats.dom);
 
+    raycaster = new Raycaster()
+
     window.addEventListener("resize", onWindowResize);
+    document.addEventListener("mousemove", onMouseMove);
+}
+
+function onMouseMove(event: any) {
+	mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+	mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
 }
 
 function onWindowResize() {
@@ -134,6 +164,8 @@ function init() {
 function render() {
     requestAnimationFrame(render)
     renderer.render(scene, camera)
+
+    updateInfo()
     stats.update()
 }
 

@@ -1,3 +1,25 @@
 body {
   margin: 0;
 }
+
+#info {
+  position: absolute;
+  top: -5px;
+  right: 10px;
+  background: white;
+  padding: 5px 8px;
+  border-radius: 3px;
+}
+
+#info p {
+  line-height: 5px;
+}
+
+#info .name {
+
+}
+
+#info .data {
+  font-size: 11px;
+  color: red;
+}

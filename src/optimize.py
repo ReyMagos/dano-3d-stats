@@ -7,9 +7,9 @@ from math import dist
 
 def optimize(
         src_path, dest_path,
-        precision=5,              # Point coordinates precision
+        precision=4,              # Point coordinates precision
         merge_rounds=6,           # Number of merging rounds
-        merge_max_distance=0.1    # Max distance within points can be merged
+        merge_max_distance=0.2    # Max distance within points can be merged
 ):
     class Json:
         NUMBER = 0
