@@ -29,7 +29,7 @@ export function init() {
 }
 
 function updateYear() {
-    year = $("form #year").value
+    year = ($("form #year") as HTMLInputElement).value
     $("form #year-field").innerHTML = year
     updateScene()
 }
@@ -37,25 +37,25 @@ function updateYear() {
 function updateMonth() {
     const months = ["", "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август",
         "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"]
-    month = $("form #month").value
+    month = ($("form #month") as HTMLInputElement).value
     $("form #month-field").innerHTML = months[parseInt(month)]
     updateScene()
 }
 
 function updateSceneData(data: string) {
     if (data !== sceneData) {
-        $(`form #${sceneData}`).checked = false
+        ($(`form #${sceneData}`) as HTMLInputElement).checked = false
         sceneData = data
     }
-    $(`form #${data}`).checked = true
+    ($(`form #${data}`) as HTMLInputElement).checked = true
     updateScene()
 }
 
 function foldControls() {
-    foldState = !foldState
+    foldState = !foldState;
 
-    $("#control").style.maxHeight = (foldState ? "0" : "200px")
-    $("#fold img").style.transform = `rotate(${foldState ? 0 : 180}deg)`
+    ($("#control") as HTMLInputElement).style.maxHeight = (foldState ? "0" : "200px");
+    ($("#fold img") as HTMLElement).style.transform = `rotate(${foldState ? 0 : 180}deg)`;
 }
 
 export function updateMouseTarget(mesh: Object3D | null) {

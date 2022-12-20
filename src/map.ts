@@ -96,6 +96,7 @@ function loadRegionsMeshes() {
         const mesh = createRegionMesh(Math.random(), geometry)
         const regionName = regionFeature.properties.region
 
+        // @ts-ignore
         mesh.userData = {"id": mapping[regionName], "name": regionName, "dataValue": Math.random()}
         scene.add(mesh)
     })
