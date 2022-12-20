@@ -203,4 +203,4 @@ def optimize(
         print("Done.")
 
 
-optimize("russia_regions.geo.json", "optimized.geo.json")
+optimize("data/russia_regions.geo.json", "data/optimized.geo.json")

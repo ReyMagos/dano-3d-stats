@@ -4,11 +4,46 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>3D Map Graph</title>
+    <script type="module" src="/src/main.ts"></script>
   </head>
   <body>
     <div id="app">
-      <div id="info"></div>
+      <div id="control">
+        <form>
+          <div class="migr">
+            <span>Миграция</span>
+
+            <div class="toggle">
+              <input type="checkbox" id="inmigr" checked>
+              <label for="inmigr" class="btn-check left">В регионы</label>
+
+              <input type="checkbox" id="outmigr">
+              <label for="outmigr" class="btn-check right">Из регионов</label>
+            </div>
+          </div>
+
+          <div class="slide">
+            <label>
+              Год — <span id="year-field">2019</span>
+              <input type="range" min="2015" max="2022" value="2019" id="year" />
+            </label>
+          </div>
+
+          <div class="slide">
+            <label>
+              Месяц — <span id="month-field">Январь</span>
+              <input type="range" min="1" max="12" value="1" id="month" />
+            </label>
+          </div>
+        </form>
+      </div>
+      <hr style="width: 100%" />
+      <div id="bottom">
+        <div id="info"></div>
+        <a id="fold">
+          <img src="src/chevron.svg" />
+        </a>
+      </div>
     </div>
-    <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

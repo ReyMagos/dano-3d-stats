@@ -1,0 +1,122 @@
+body {
+  margin: 0;
+  font-family: "Roboto", "Ubuntu", sans-serif;
+}
+
+.space-between-y(@size) {
+  & > * {
+      margin: @size 0;
+  }
+}
+
+
+#app {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  width: max(24%, 256px);
+  top: -5px;
+  right: 10px;
+  background: white;
+  border-radius: 3px;
+  padding: 5px 10px;
+
+  hr {
+    height: 1px;
+    border: none;
+    background: black;
+    margin: 0;
+  }
+}
+
+#bottom {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 5px 5px 5px;
+
+  p {
+    margin: 0;
+  }
+
+  .data {
+    font-size: 11px;
+    color: red;
+  }
+}
+
+#fold {
+  padding: 10px;
+  background-color: rgba(66, 66, 245, 0.27);
+  border-radius: 8px;
+
+  max-height: 20px;
+  user-select: none;
+  cursor: pointer;
+
+  img {
+    width: 20px;
+  }
+}
+
+#control form {
+  .space-between-y(15px);
+}
+
+#control {
+  overflow-y: hidden;
+  height: 200px;
+  transition: all ease 0.2s;
+  padding: 5px;
+}
+
+input[type=checkbox] {
+  display: none;
+
+  &:checked + .btn-check {
+    color: white;
+    background: #4242f5
+  }
+}
+
+#month-field, #year-field {
+  color: #4242f5;
+}
+
+.migr {
+  display: flex;
+  justify-content: space-between;
+}
+
+.toggle {
+  display: flex;
+}
+
+.slide {
+  display: flex;
+  flex-direction: column;
+
+  input {
+    width: 100%;
+  }
+}
+
+.btn-check {
+  border: 1px solid black;
+  border-radius: 5px;
+  padding: 4px;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color ease 0.2s;
+  font-size: max(1.2vw, 12px);
+
+  &.left {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  &.right {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    border-left: 0;
+  }
+}
