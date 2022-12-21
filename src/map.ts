@@ -1,7 +1,6 @@
 import {
     DirectionalLight, ExtrudeGeometry, HemisphereLight, Mesh,
-    MeshBasicMaterial, MeshStandardMaterial,
-    Path, PerspectiveCamera, Raycaster,
+    MeshStandardMaterial, Path, PerspectiveCamera, Raycaster,
     Scene, Shape, Vector2, WebGLRenderer
 } from "three";
 import {OrbitControls} from "three/examples/jsm/controls/OrbitControls";
@@ -75,10 +74,6 @@ function createRegionMesh(dataValue: number, polygons: any[]) {
         color: gradient(0x202020, 0x6bba3a, dataValue),
         flatShading: true,
         roughness: 1,
-        // metalness: 0
-    })
-    const sideMaterial = new MeshBasicMaterial({
-        color: gradient(0x202020, 0x6bba3a, dataValue)
     })
     const geometry = new ExtrudeGeometry(regionShape, {
         bevelEnabled: false,
@@ -97,9 +92,10 @@ function loadRegionsMeshes() {
         const regionName = regionFeature.properties.region
 
         // @ts-ignore
-        mesh.userData = {"id": mapping[regionName], "name": regionName, "dataValue": Math.random()}
+        mesh.userData = {"id": mapping[regionName], "name": regionName, "dataValue": 0}
         scene.add(mesh)
     })
+    updateScene()
 }
 
 export function init() {
@@ -115,15 +111,14 @@ export function init() {
     renderer = new WebGLRenderer({antialias: true})
     renderer.setPixelRatio(window.devicePixelRatio)
     renderer.setSize(window.innerWidth, window.innerHeight)
-    // renderer.setClearColor(0xffffff)
     document.body.appendChild(renderer.domElement)
 
     const controls = new OrbitControls(camera, renderer.domElement)
     controls.target.set(55, 60, 10)
     controls.update()
 
-    stats = new Stats()
-    document.body.appendChild(stats.dom)
+    // stats = new Stats()
+    // document.body.appendChild(stats.dom)
 
     raycaster = new Raycaster()
 
@@ -137,7 +132,7 @@ export function init() {
     composer.addPass(outline)
 
     const effectFXAA = new ShaderPass(FXAAShader);
-    effectFXAA.uniforms['resolution'].value.set(1 / window.innerWidth, 1 / window.innerHeight);
+    effectFXAA.uniforms["resolution"].value.set(1 / window.innerWidth, 1 / window.innerHeight);
     composer.addPass(effectFXAA);
 
     window.addEventListener("resize", onWindowResize)
@@ -206,5 +201,5 @@ export function launchRender() {
 
     traceMouseTarget()
     composer.render()
-    stats.update()
+    // stats.update()
 }

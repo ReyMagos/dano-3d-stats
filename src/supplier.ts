@@ -54,7 +54,7 @@ function updateSceneData(data: string) {
 function foldControls() {
     foldState = !foldState;
 
-    ($("#control") as HTMLInputElement).style.maxHeight = (foldState ? "0" : "200px");
+    ($("#control") as HTMLElement).style.maxHeight = (foldState ? "0" : "200px");
     ($("#fold img") as HTMLElement).style.transform = `rotate(${foldState ? 0 : 180}deg)`;
 }
 
