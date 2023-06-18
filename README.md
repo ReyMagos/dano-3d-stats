@@ -1,7 +1,7 @@
 # 3D Map Graph
 
 ### Build and run
-`python src/optimize.py` - generate optimized regions map data
+`cd src && python optimize.py` - generate optimized regions map data
 
 `npm install` - install required npm packages
 
